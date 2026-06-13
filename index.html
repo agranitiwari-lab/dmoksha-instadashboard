@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>D'Moksha — Instagram Content Performance</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#0f1115; --panel:#181b22; --panel2:#1f232c; --line:#2a2f3a;
@@ -16,8 +17,8 @@
   body{margin:0;background:var(--bg);color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1100px;margin:0 auto;padding:32px 20px 64px}
-  header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:28px}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 20px 64px}
+  header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:8px}
   h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
   .sub{color:var(--muted);font-size:14px}
   .scope{display:inline-block;margin-top:12px;font-size:12px;color:var(--accent);
@@ -25,26 +26,44 @@
   .meta{color:var(--muted);font-size:12px;margin-top:10px}
   h2{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);
     margin:34px 0 14px;font-weight:600}
+  h2 .note{text-transform:none;letter-spacing:0;font-weight:400}
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
   .card .k{font-size:12px;color:var(--muted);margin-bottom:6px}
   .card .v{font-size:24px;font-weight:650}
-  .card .v small{font-size:13px;color:var(--muted);font-weight:400}
   .hl{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:620px){.hl{grid-template-columns:1fr}}
-  .hlcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;
-    border-left:4px solid var(--line)}
+  .hlcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;border-left:4px solid var(--line)}
   .hlcard.best{border-left-color:var(--good)}
   .hlcard.worst{border-left-color:var(--bad)}
   .hlcard .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
   .hlcard .ttl{font-size:18px;font-weight:650;margin:6px 0 4px}
   .hlcard .det{font-size:13px;color:var(--muted)}
+  /* charts */
+  .charts{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+  @media(max-width:780px){.charts{grid-template-columns:1fr}}
+  .chartbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .chartbox h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600}
+  .chartbox canvas{max-height:260px}
+  /* breakdown tables */
+  .bd{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:780px){.bd{grid-template-columns:1fr}}
+  /* filter bar */
+  .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  .filters input,.filters select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+    border-radius:8px;padding:8px 11px;font-size:13px;outline:none}
+  .filters input{min-width:200px}
+  .filters input::placeholder{color:var(--muted)}
+  .filters .reset{cursor:pointer;color:var(--accent);background:none;border:none;font-size:13px}
+  .count{color:var(--muted);font-size:12px;margin-left:auto}
   .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
-  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:780px}
   th,td{padding:11px 12px;text-align:right;white-space:nowrap}
   th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:11.5px;
-    text-transform:uppercase;letter-spacing:.6px;position:sticky;top:0}
-  th:first-child,td:first-child,th.l,td.l{text-align:left}
+    text-transform:uppercase;letter-spacing:.6px;cursor:pointer;user-select:none}
+  th.l,td.l{text-align:left}
+  th .arrow{opacity:.4;font-size:10px;margin-left:3px}
+  th.sorted .arrow{opacity:1;color:var(--accent)}
   tbody tr{border-top:1px solid var(--line)}
   tbody tr:hover{background:var(--panel2)}
   .rank{color:var(--muted);width:34px}
@@ -55,8 +74,7 @@
   .b-bad{color:var(--bad);background:var(--bad-bg)}
   .b-even{color:var(--even);background:var(--even-bg)}
   footer{margin-top:34px;color:var(--muted);font-size:12px;text-align:center}
-  .err{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad);
-    padding:14px 16px;border-radius:10px;font-size:14px}
+  .err{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad);padding:14px 16px;border-radius:10px;font-size:14px}
 </style>
 </head>
 <body>
@@ -67,96 +85,206 @@
     <span class="scope">Public view · engagement &amp; spend only</span>
     <div class="meta" id="meta"></div>
   </header>
-
   <div id="content"></div>
 </div>
 
 <script>
-const pct = v => v==null ? "—" : (v*100).toFixed(1)+"%";
-const inr = v => v==null ? "—" : "₹"+Number(v).toLocaleString("en-IN",{maximumFractionDigits:0});
+const pct  = v => v==null ? "—" : (v*100).toFixed(1)+"%";
+const inr  = v => v==null ? "—" : "₹"+Number(v).toLocaleString("en-IN",{maximumFractionDigits:0});
 const inr2 = v => v==null ? "—" : "₹"+Number(v).toFixed(2);
-const num = v => v==null ? "—" : Number(v).toLocaleString("en-IN");
-
-const verdictClass = v => {
-  const t=(v||"").toLowerCase();
+const num  = v => v==null ? "—" : Number(v).toLocaleString("en-IN");
+const verdictClass = v => { const t=(v||"").toLowerCase();
   if(t.startsWith("profit")) return "b-good";
-  if(t.startsWith("loss"))   return "b-bad";
-  return "b-even";
-};
+  if(t.startsWith("loss"))   return "b-bad"; return "b-even"; };
+const verdictColor = v => { const t=(v||"").toLowerCase();
+  if(t.startsWith("profit")) return "#34c08a";
+  if(t.startsWith("loss"))   return "#e2655b"; return "#d9b25a"; };
+
+let DATA, state={ q:"", format:"", channel:"", verdict:"", sortKey:"cpv", sortDir:1 };
+
+const COLS=[
+  {k:"rank",  label:"#",       l:true,  sortable:false},
+  {k:"title", label:"Content", l:true,  fmt:p=>`<span class="title-cell">${p.title}</span><div class="fmt">${p.format} · ${p.channel}</div>`},
+  {k:"spend", label:"Spend",   fmt:p=>inr(p.spend)},
+  {k:"views", label:"Views",   fmt:p=>num(p.views)},
+  {k:"cpv",   label:"CPV",     fmt:p=>inr2(p.cpv)},
+  {k:"cpe",   label:"CPE",     fmt:p=>inr2(p.cpe)},
+  {k:"saveRate", label:"Save", fmt:p=>pct(p.saveRate)},
+  {k:"shareRate",label:"Share",fmt:p=>pct(p.shareRate)},
+  {k:"hookRate", label:"Hook", fmt:p=>p.hookRate==null?"—":pct(p.hookRate)},
+  {k:"follows",  label:"Follows",fmt:p=>num(p.follows)},
+  {k:"verdict",  label:"Verdict",l:true,fmt:p=>`<span class="badge ${verdictClass(p.verdict)}">${p.verdict}</span>`},
+];
+
+function uniq(arr){ return [...new Set(arr)].filter(Boolean); }
+
+function groupStats(pieces, key){
+  const groups={};
+  pieces.forEach(p=>{ const g=p[key]||"—"; (groups[g]=groups[g]||[]).push(p); });
+  return Object.entries(groups).map(([name,items])=>{
+    const avg=(f)=>{ const v=items.map(f).filter(x=>x!=null); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
+    return {
+      name, count:items.length,
+      spend: items.reduce((a,b)=>a+(b.spend||0),0),
+      avgCPV: avg(p=>p.cpv), avgCPE: avg(p=>p.cpe),
+      avgSaveShare: avg(p=>(p.saveRate||0)+(p.shareRate||0)),
+    };
+  }).sort((a,b)=>(a.avgCPV??1e9)-(b.avgCPV??1e9));
+}
+
+function breakdownTable(title, key){
+  const rows=groupStats(DATA.pieces,key).map(g=>`
+    <tr><td class="l title-cell">${g.name}</td><td>${g.count}</td>
+    <td>${inr(g.spend)}</td><td>${inr2(g.avgCPV)}</td>
+    <td>${inr2(g.avgCPE)}</td><td>${pct(g.avgSaveShare)}</td></tr>`).join("");
+  return `<div class="tablewrap"><table style="min-width:0">
+    <thead><tr><th class="l">${title}</th><th>Pieces</th><th>Spend</th>
+    <th>Avg CPV</th><th>Avg CPE</th><th>Avg S+S</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function applyFilters(){
+  return DATA.pieces.filter(p=>{
+    if(state.format  && p.format !==state.format)  return false;
+    if(state.channel && p.channel!==state.channel) return false;
+    if(state.verdict && p.verdict!==state.verdict) return false;
+    if(state.q){ const q=state.q.toLowerCase();
+      if(!(`${p.title} ${p.format} ${p.channel} ${p.verdict}`.toLowerCase().includes(q))) return false; }
+    return true;
+  }).sort((a,b)=>{
+    const k=state.sortKey; let av=a[k], bv=b[k];
+    if(typeof av==="string"||typeof bv==="string"){ av=(av||"").toString().toLowerCase(); bv=(bv||"").toString().toLowerCase();
+      return av<bv?-state.sortDir: av>bv?state.sortDir:0; }
+    av=av==null?Infinity:av; bv=bv==null?Infinity:bv;
+    return (av-bv)*state.sortDir;
+  });
+}
+
+function renderTable(){
+  const rows=applyFilters();
+  const head=COLS.map(c=>{
+    const sorted=c.k===state.sortKey;
+    const arrow=c.sortable===false?"":`<span class="arrow">${sorted?(state.sortDir>0?"▲":"▼"):"▲"}</span>`;
+    return `<th class="${c.l?"l ":""}${sorted?"sorted":""}" data-k="${c.k}" data-sortable="${c.sortable!==false}">${c.label}${arrow}</th>`;
+  }).join("");
+  const body=rows.map((p,i)=>"<tr>"+COLS.map(c=>{
+    if(c.k==="rank") return `<td class="rank">${i+1}</td>`;
+    const cls=c.l?"l":""; return `<td class="${cls}">${c.fmt(p)}</td>`;
+  }).join("")+"</tr>").join("");
+  document.getElementById("tbody").innerHTML=body;
+  document.querySelector("#perftable thead").innerHTML="<tr>"+head+"</tr>";
+  document.getElementById("rowcount").textContent=`${rows.length} of ${DATA.pieces.length} pieces`;
+  document.querySelectorAll("#perftable thead th").forEach(th=>{
+    if(th.dataset.sortable==="true") th.onclick=()=>{
+      const k=th.dataset.k;
+      if(state.sortKey===k) state.sortDir*=-1; else { state.sortKey=k; state.sortDir=1; }
+      renderTable();
+    };
+  });
+}
+
+function buildCharts(){
+  const ranked=[...DATA.pieces].sort((a,b)=>(a.cpv??1e9)-(b.cpv??1e9));
+  Chart.defaults.color="#9aa3b2"; Chart.defaults.borderColor="#2a2f3a"; Chart.defaults.font.size=11;
+
+  new Chart(document.getElementById("cpvChart"),{
+    type:"bar",
+    data:{ labels:ranked.map(p=>p.title),
+      datasets:[{ label:"CPV (₹)", data:ranked.map(p=>p.cpv),
+        backgroundColor:ranked.map(p=>verdictColor(p.verdict)) }]},
+    options:{ plugins:{legend:{display:false}}, responsive:true,
+      scales:{ x:{ticks:{maxRotation:38,minRotation:0}}, y:{beginAtZero:true} } }
+  });
+
+  const vc={Profitable:0,"Broke even":0,"Loss-making":0};
+  DATA.pieces.forEach(p=>{ if(vc[p.verdict]!=null) vc[p.verdict]++; });
+  new Chart(document.getElementById("verdictChart"),{
+    type:"doughnut",
+    data:{ labels:Object.keys(vc),
+      datasets:[{ data:Object.values(vc),
+        backgroundColor:["#34c08a","#d9b25a","#e2655b"], borderColor:"#181b22", borderWidth:2 }]},
+    options:{ plugins:{legend:{position:"bottom"}}, cutout:"58%" }
+  });
+
+  const fg=groupStats(DATA.pieces,"format");
+  new Chart(document.getElementById("formatChart"),{
+    type:"bar",
+    data:{ labels:fg.map(g=>g.name),
+      datasets:[{ label:"Avg CPV (₹)", data:fg.map(g=>g.avgCPV), backgroundColor:"#c9a24b" }]},
+    options:{ indexAxis:"y", plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} }
+  });
+}
 
 function render(d){
+  DATA=d;
   document.getElementById("meta").innerHTML =
     `Source: ${d.meta.source} &nbsp;·&nbsp; Months: ${(d.meta.monthsCovered||[]).join(", ")||"—"} `+
     `&nbsp;·&nbsp; Updated ${new Date(d.meta.generatedAt).toLocaleString("en-IN")}`;
 
-  const s=d.summary;
-  const cards = `
-    <h2>Summary</h2>
-    <div class="cards">
-      <div class="card"><div class="k">Pieces analysed</div><div class="v">${s.pieces}</div></div>
-      <div class="card"><div class="k">Avg CPV</div><div class="v">${inr2(s.avgCPV)}</div></div>
-      <div class="card"><div class="k">Avg CPE</div><div class="v">${inr2(s.avgCPE)}</div></div>
-      <div class="card"><div class="k">Avg save + share rate</div><div class="v">${pct(s.avgSaveShareRate)}</div></div>
-      <div class="card"><div class="k">Profitable</div><div class="v" style="color:var(--good)">${s.profitable}</div></div>
-      <div class="card"><div class="k">Broke even</div><div class="v" style="color:var(--even)">${s.brokeEven}</div></div>
-      <div class="card"><div class="k">Loss-making</div><div class="v" style="color:var(--bad)">${s.lossMaking}</div></div>
-    </div>`;
+  const s=d.summary, h=d.highlights;
+  const cards=`<h2>Summary</h2><div class="cards">
+    <div class="card"><div class="k">Pieces analysed</div><div class="v">${s.pieces}</div></div>
+    <div class="card"><div class="k">Avg CPV</div><div class="v">${inr2(s.avgCPV)}</div></div>
+    <div class="card"><div class="k">Avg CPE</div><div class="v">${inr2(s.avgCPE)}</div></div>
+    <div class="card"><div class="k">Avg save + share</div><div class="v">${pct(s.avgSaveShareRate)}</div></div>
+    <div class="card"><div class="k">Profitable</div><div class="v" style="color:var(--good)">${s.profitable}</div></div>
+    <div class="card"><div class="k">Broke even</div><div class="v" style="color:var(--even)">${s.brokeEven}</div></div>
+    <div class="card"><div class="k">Loss-making</div><div class="v" style="color:var(--bad)">${s.lossMaking}</div></div></div>`;
 
-  const h=d.highlights;
-  const hl = `
-    <h2>Highlights</h2>
-    <div class="hl">
-      <div class="hlcard best">
-        <div class="lbl">Highest performer</div>
-        <div class="ttl">${h.bestPerformer.title}</div>
-        <div class="det">CPV ${inr2(h.bestPerformer.cpv)} · ${h.bestPerformer.verdict}</div>
-      </div>
-      <div class="hlcard worst">
-        <div class="lbl">Lowest performer</div>
-        <div class="ttl">${h.worstPerformer.title}</div>
-        <div class="det">CPV ${inr2(h.worstPerformer.cpv)} · ${h.worstPerformer.verdict}</div>
-      </div>
-    </div>`;
+  const hl=`<h2>Highlights</h2><div class="hl">
+    <div class="hlcard best"><div class="lbl">Highest performer</div>
+      <div class="ttl">${h.bestPerformer.title}</div>
+      <div class="det">CPV ${inr2(h.bestPerformer.cpv)} · ${h.bestPerformer.verdict}</div></div>
+    <div class="hlcard worst"><div class="lbl">Lowest performer</div>
+      <div class="ttl">${h.worstPerformer.title}</div>
+      <div class="det">CPV ${inr2(h.worstPerformer.cpv)} · ${h.worstPerformer.verdict}</div></div></div>`;
 
-  const ranked=[...d.pieces].sort((a,b)=>(a.cpv??1e9)-(b.cpv??1e9));
-  const rows = ranked.map((p,i)=>`
-    <tr>
-      <td class="rank">${i+1}</td>
-      <td class="l title-cell">${p.title}<div class="fmt">${p.format} · ${p.channel}</div></td>
-      <td>${inr(p.spend)}</td>
-      <td>${num(p.views)}</td>
-      <td>${inr2(p.cpv)}</td>
-      <td>${inr2(p.cpe)}</td>
-      <td>${pct(p.saveRate)}</td>
-      <td>${pct(p.shareRate)}</td>
-      <td>${p.hookRate==null?"—":pct(p.hookRate)}</td>
-      <td>${num(p.follows)}</td>
-      <td class="l"><span class="badge ${verdictClass(p.verdict)}">${p.verdict}</span></td>
-    </tr>`).join("");
+  const charts=`<h2>Visuals</h2><div class="charts">
+    <div class="chartbox"><h3>Cost per view by piece (lower is better)</h3><canvas id="cpvChart"></canvas></div>
+    <div class="chartbox"><h3>Verdict mix</h3><canvas id="verdictChart"></canvas></div></div>
+    <div class="charts" style="margin-top:14px">
+    <div class="chartbox"><h3>Avg CPV by format</h3><canvas id="formatChart"></canvas></div>
+    <div class="chartbox"><h3>&nbsp;</h3><div style="color:var(--muted);font-size:13px">
+      Charts reflect all ${s.pieces} pieces. Use the filters below to slice the table.</div></div></div>`;
 
-  const table = `
-    <h2>Ranked performance <span style="text-transform:none;letter-spacing:0;font-weight:400">(best CPV first)</span></h2>
-    <div class="tablewrap"><table>
-      <thead><tr>
-        <th class="l">#</th><th class="l">Content</th><th>Spend</th><th>Views</th>
-        <th>CPV</th><th>CPE</th><th>Save</th><th>Share</th><th>Hook</th><th>Follows</th>
-        <th class="l">Verdict</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>`;
+  const bd=`<h2>Breakdowns</h2><div class="bd">
+    ${breakdownTable("By format","format")}
+    ${breakdownTable("By channel","channel")}</div>`;
 
-  document.getElementById("content").innerHTML = cards+hl+table+
+  const formats=uniq(d.pieces.map(p=>p.format)).map(x=>`<option>${x}</option>`).join("");
+  const channels=uniq(d.pieces.map(p=>p.channel)).map(x=>`<option>${x}</option>`).join("");
+  const verdicts=uniq(d.pieces.map(p=>p.verdict)).map(x=>`<option>${x}</option>`).join("");
+  const table=`<h2>Ranked performance <span class="note">(click any column to sort)</span></h2>
+    <div class="filters">
+      <input id="f-q" placeholder="Search content…">
+      <select id="f-format"><option value="">All formats</option>${formats}</select>
+      <select id="f-channel"><option value="">All channels</option>${channels}</select>
+      <select id="f-verdict"><option value="">All verdicts</option>${verdicts}</select>
+      <button class="reset" id="f-reset">Reset</button>
+      <span class="count" id="rowcount"></span>
+    </div>
+    <div class="tablewrap"><table id="perftable"><thead></thead><tbody id="tbody"></tbody></table></div>`;
+
+  document.getElementById("content").innerHTML=cards+hl+charts+bd+table+
     `<footer>Engagement &amp; spend metrics only — no revenue or lead data is published on this page.</footer>`;
+
+  buildCharts();
+  renderTable();
+  const bind=(id,key)=>{ const el=document.getElementById(id);
+    el.oninput=el.onchange=()=>{ state[key]=el.value; renderTable(); }; };
+  bind("f-q","q"); bind("f-format","format"); bind("f-channel","channel"); bind("f-verdict","verdict");
+  document.getElementById("f-reset").onclick=()=>{
+    state={...state,q:"",format:"",channel:"",verdict:""};
+    ["f-q","f-format","f-channel","f-verdict"].forEach(i=>document.getElementById(i).value="");
+    renderTable();
+  };
 }
 
 fetch("./data.json?_="+Date.now())
   .then(r=>{ if(!r.ok) throw new Error("data.json not found ("+r.status+")"); return r.json(); })
   .then(render)
-  .catch(e=>{
-    document.getElementById("content").innerHTML =
-      `<div class="err">Couldn't load data.json — ${e.message}. `+
-      `If you're opening this file directly, view it through the GitHub Pages URL instead.</div>`;
-  });
+  .catch(e=>{ document.getElementById("content").innerHTML=
+    `<div class="err">Couldn't load data.json — ${e.message}. If you're opening this file directly, view it through the GitHub Pages URL instead.</div>`; });
 </script>
 </body>
 </html>
