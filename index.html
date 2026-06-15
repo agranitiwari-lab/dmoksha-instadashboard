@@ -53,6 +53,7 @@
   tbody tr:last-child td{border-bottom:0} .prow:hover td{background:var(--surface-2)}
   td.c-content{text-align:left;padding-left:26px} .cwrap{display:flex;align-items:center;gap:13px}
   .thumb{width:46px;height:46px;border-radius:8px;flex:none;border:1px solid var(--line-strong);background:repeating-linear-gradient(45deg,var(--surface-2) 0 5px,var(--line) 5px 10px)}
+  img.thumb{object-fit:cover;display:block}
   .cmeta{min-width:0} .ctitle{font-size:14.5px;font-weight:600;color:var(--ink);line-height:1.25}
   .badges{display:flex;gap:6px;margin-top:6px}
   .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap}
@@ -185,7 +186,7 @@ function renderTable(){
     const campCls=p.objective==="Traffic"?"camp-boost":"camp-eng";
     const cpvCls=p.cpv==null?"":(p.cpv<=avgCPV?"green":"red");
     const cpeCls=p.cpe==null?"":(p.cpe<=avgCPE?"green":"red");
-    return `<tr class="prow"><td class="c-content"><div class="cwrap"><div class="thumb"></div><div class="cmeta"><div class="ctitle">${esc(p.title)}</div><div class="badges"><span class="badge fmt">${esc(p.format||"—")}</span><span class="badge ${campCls}">${esc(p.objective)}</span></div></div></div></td><td class="num">${spendF(p.spend)}</td><td class="num">${intF(p.reach)}</td><td class="num">${intF(p.views)}</td><td class="num">${pct(p.saveRate)}</td><td class="num">${pct(p.shareRate)}</td><td class="num">${intF(p.follows)}</td><td class="num">${intF(p.engagements)}</td><td class="eff ${cpvCls}">${cpvF(p.cpv)}</td><td class="eff ${cpeCls}">${cpeF(p.cpe)}</td><td class="c-verdict"><span class="pill ${vClass(p.verdict)}">${p.verdict||"No spend"}</span><div class="reason">${vReason(p.verdict)}</div></td></tr>`;
+    return `<tr class="prow"><td class="c-content"><div class="cwrap">${p.image?('<img class="thumb" loading="lazy" alt="" src="'+esc(p.image)+'">'):'<div class="thumb"></div>'}<div class="cmeta"><div class="ctitle">${esc(p.title)}</div><div class="badges"><span class="badge fmt">${esc(p.format||"—")}</span><span class="badge ${campCls}">${esc(p.objective)}</span></div></div></div></td><td class="num">${spendF(p.spend)}</td><td class="num">${intF(p.reach)}</td><td class="num">${intF(p.views)}</td><td class="num">${pct(p.saveRate)}</td><td class="num">${pct(p.shareRate)}</td><td class="num">${intF(p.follows)}</td><td class="num">${intF(p.engagements)}</td><td class="eff ${cpvCls}">${cpvF(p.cpv)}</td><td class="eff ${cpeCls}">${cpeF(p.cpe)}</td><td class="c-verdict"><span class="pill ${vClass(p.verdict)}">${p.verdict||"No spend"}</span><div class="reason">${vReason(p.verdict)}</div></td></tr>`;
   }).join("");
   document.getElementById("emptyNote").hidden = rows.length>0;
 }
