@@ -57,6 +57,9 @@
   .chip{appearance:none;border:0;background:transparent;color:var(--ink-soft);font-family:var(--sans);font-size:13px;font-weight:500;padding:7px 15px;border-radius:999px;cursor:pointer;white-space:nowrap}
   .chip:hover{color:var(--ink)} .chip[aria-pressed="true"]{background:var(--purple);color:var(--purple-ink)}
   .sortwrap{display:inline-flex;align-items:center;gap:9px} .sortwrap label{font-size:13px;color:var(--ink-mute)}
+  .searchbar{margin-bottom:14px}
+  .searchbar input{width:100%;max-width:430px;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:10px 16px 10px 40px;outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23948a7c' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:14px center}
+  .searchbar input:focus{border-color:var(--purple)} .searchbar input::placeholder{color:var(--ink-mute)}
   .sortsel{appearance:none;font-family:var(--sans);font-size:13px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:8px 34px 8px 15px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23948a7c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
   .tablecard{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
   .tablescroll{overflow-x:auto;max-height:640px;overflow-y:auto}
@@ -154,6 +157,7 @@
     <div class="chartcard"><h3>Most-viewed posts</h3><div class="chartbox"><canvas id="chTop"></canvas></div></div>
   </section>
   <p class="section-eyebrow">Ranked content</p>
+  <div class="searchbar"><input type="search" id="searchInput" placeholder="Search posts by name\u2026" autocomplete="off" aria-label="Search posts by name"></div>
   <div class="controls">
     <div class="filtersets">
       <div class="chips" id="fmtChips" role="group">
@@ -216,11 +220,11 @@ const pct=v=>v==null?'<span class="muted">—</span>':(v*100).toFixed(1)+"%";
 const cpvF=v=>v==null?"—":"₹"+Number(v).toFixed(4);
 const cpeF=v=>v==null?"—":"₹"+Number(v).toFixed(3);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-let DATA, state={window:"lifetime",fmt:"all",camp:"all",bucket:"all",sort:"spend"};
+let DATA, state={window:"lifetime",fmt:"all",camp:"all",bucket:"all",q:"",sort:"spend"};
 const today=new Date();
 function inWindow(p){ if(state.window==="lifetime"||!p.date) return true; const d=new Date(p.date+"T00:00:00"); const days=(today-d)/86400000; if(days<0) return false; return state.window==="d7"?days<=7:days<=30; }
 function windowed(){ return DATA.pieces.filter(inWindow); }
-function filtered(){ return windowed().filter(p=>{ if(state.fmt!=="all"&&p.format!==state.fmt) return false; if(state.camp!=="all"&&p.objective!==state.camp) return false; if(state.bucket!=="all"&&p.bucket!==state.bucket) return false; return true; }).sort((a,b)=>{ const k=state.sort; let av=a[k],bv=b[k]; av=av==null?-Infinity:av; bv=bv==null?-Infinity:bv; return (k==="spend"||k==="views"||k==="engRate"||k==="saveRate")?bv-av:av-bv; }); }
+function filtered(){ return windowed().filter(p=>{ if(state.fmt!=="all"&&p.format!==state.fmt) return false; if(state.camp!=="all"&&p.objective!==state.camp) return false; if(state.bucket!=="all"&&p.bucket!==state.bucket) return false; if(state.q&&!p.title.toLowerCase().includes(state.q.trim().toLowerCase())) return false; return true; }).sort((a,b)=>{ const k=state.sort; let av=a[k],bv=b[k]; av=av==null?-Infinity:av; bv=bv==null?-Infinity:bv; return (k==="spend"||k==="views"||k==="engRate"||k==="saveRate")?bv-av:av-bv; }); }
 const vClass=v=>v==="Profitable"?"green":v==="Loss-making"?"red":v==="Broke even"?"amber":"grey";
 const vReason=v=>v==="Profitable"?"Low CPV &amp; CPE":v==="Loss-making"?"High CPV &amp; CPE":v==="Broke even"?"Mixed efficiency":"Not boosted";
 function renderTiles(){
@@ -277,6 +281,7 @@ function render(d){
   document.getElementById("metaLine").innerHTML=`<span class="dot"></span> Source: ${esc(d.meta.source)} — ${esc(d.meta.note||"")}`;
   bindChips("fmtChips","fmt"); bindChips("campChips","camp"); const _bk=[...new Set(DATA.pieces.map(p=>p.bucket).filter(Boolean))].sort(); document.getElementById("bucketChips").innerHTML='<button class="chip" data-bucket="all" aria-pressed="true" type="button">All buckets</button>'+_bk.map(b=>'<button class="chip" data-bucket="'+esc(b)+'" aria-pressed="false" type="button">'+esc(b)+'</button>').join(""); bindChips("bucketChips","bucket");
   document.getElementById("sortSel").onchange=e=>{state.sort=e.target.value;renderTable();};
+  document.getElementById("searchInput").oninput=e=>{state.q=e.target.value;renderTable();};
   document.getElementById("windowToggle").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; state.window=b.dataset.window; [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false")); renderAll(); });
   renderAll();
 }
