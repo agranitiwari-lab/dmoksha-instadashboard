@@ -266,7 +266,7 @@ function buildCharts(){
   const bk={}; w.forEach(p=>{ if(p.boosted) bk[p.bucket]=(bk[p.bucket]||0)+(p.spend||0); });
   const bkE=Object.entries(bk).sort((a,b)=>b[1]-a[1]);
   const top=[...w].filter(p=>p.views).sort((a,b)=>b.views-a.views).slice(0,5);
-  const cut=s=>s.length>22?s.slice(0,21)+"\u2026":s;
+  const cut=s=>{const i=s.search(/[_:;]/);let t=i>=0?s.slice(i+1).trim():s;return t.length>26?t.slice(0,25)+"\u2026":t;};
   const base={responsive:true,maintainAspectRatio:false};
   const mk=(id,cfg)=>{ const el=document.getElementById(id); if(!el) return; if(CHARTS[id]) CHARTS[id].destroy(); CHARTS[id]=new Chart(el,cfg); };
   mk("chVerdict",{type:"doughnut",data:{labels:Object.keys(vc),datasets:[{data:Object.values(vc),backgroundColor:["#2e7d57","#d8af6a","#b13a2b"],borderWidth:0}]},options:{...base,cutout:"58%",plugins:{legend:{position:"bottom",labels:{boxWidth:10,padding:8}}}}});
