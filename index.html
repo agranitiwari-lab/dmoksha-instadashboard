@@ -152,9 +152,7 @@
   <section class="tiles">
     <article class="tile"><p class="tile-label">Total boost spend</p><div class="tile-value" id="t-spend">&mdash;</div><p class="tile-foot" id="t-split">&mdash;</p></article>
     <article class="tile"><p class="tile-label">Pieces boosted</p><div class="tile-value" id="t-count">&mdash;</div><p class="tile-foot" id="t-count-foot">&mdash;</p></article>
-    <article class="tile accent"><p class="tile-label">Most efficient</p><div class="tile-value" id="t-best-cpe">&mdash;</div><p class="tile-best" id="t-best-name">&mdash;</p></article>
-    <article class="tile bled"><p class="tile-label">Loss-making spend</p><div class="tile-value" id="t-bled">&mdash;</div><p class="tile-foot" id="t-bled-foot">&mdash;</p></article>
-    <article class="tile engbox" style="grid-column:1 / -1"><p class="tile-label">Engagement</p><div class="engstats" id="engStats"></div></article>
+    <article class="tile engbox" style="grid-column:span 2"><p class="tile-label">Engagement</p><div class="engstats" id="engStats"></div></article>
   </section>
   <p class="section-eyebrow">At a glance</p>
   <section class="charts">
@@ -238,16 +236,10 @@ function renderTiles(){
   const total=boosted.reduce((a,b)=>a+(b.spend||0),0);
   const sT=boosted.filter(p=>p.objective==="Traffic").reduce((a,b)=>a+(b.spend||0),0);
   const sE=boosted.filter(p=>p.objective==="Engagement").reduce((a,b)=>a+(b.spend||0),0);
-  const loss=w.filter(p=>p.verdict==="Loss-making"); const lossSpend=loss.reduce((a,b)=>a+(b.spend||0),0);
-  const wc=boosted.filter(p=>p.cpe!=null); const best=wc.length?wc.reduce((a,b)=>a.cpe<b.cpe?a:b):null;
   document.getElementById("t-spend").textContent=spendF(total);
   document.getElementById("t-split").innerHTML=`<b>${spendF(sT)}</b> traffic <span class="sep">·</span> <b>${spendF(sE)}</b> engagement`;
   document.getElementById("t-count").textContent=boosted.length;
   document.getElementById("t-count-foot").innerHTML=`of <b>${w.length}</b> pieces in view`;
-  document.getElementById("t-best-cpe").innerHTML=best?`${cpeF(best.cpe)}<span class="unit">/ engmt</span>`:"—";
-  document.getElementById("t-best-name").textContent=best?best.title:"—";
-  document.getElementById("t-bled").textContent=spendF(lossSpend);
-  document.getElementById("t-bled-foot").innerHTML=`<b>${loss.length}</b> pieces below average`;
   const sumK=k=>w.reduce((a,b)=>a+(b[k]||0),0);
   const eg=[["Total Follows","follows"],["Total Likes","likes"],["Total Comments","comments"],["Total Saves","saves"],["Total Shares","shares"]];
   document.getElementById("engStats").innerHTML=eg.map(([l,k])=>`<div class="engstat"><span class="v">${Number(sumK(k)).toLocaleString("en-IN")}</span><span class="l">${l}</span></div>`).join("");
