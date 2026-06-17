@@ -79,6 +79,8 @@
   thead tr:last-child th.h-sub:last-child{border-right:1px solid var(--line-strong)}
   tbody td[data-label="Engagements"]{border-left:1px solid var(--line-strong)}
   tbody td[data-label="Saves"]{border-right:1px solid var(--line-strong)}
+  thead th[data-sort]{cursor:pointer;user-select:none} thead th[data-sort]:hover{color:var(--ink-soft)}
+  .sarrow{margin-left:4px;font-size:9px;color:var(--purple);vertical-align:middle}
   thead th.h-content{text-align:left;padding-left:26px} thead th.h-verdict{text-align:left;padding-right:26px}
   tbody td{padding:16px 14px;border-bottom:1px solid var(--line);font-size:14px;text-align:right;vertical-align:middle;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
   tbody tr:last-child td{border-bottom:0} .prow:hover td{background:var(--surface-2)}
@@ -186,34 +188,27 @@
       </div>
       <div class="chips" id="bucketChips" role="group" aria-label="Filter by content bucket"></div>
     </div>
-    <div class="sortwrap">
-      <label for="sortSel">Sort by</label>
-      <select class="sortsel" id="sortSel">
-        <option value="spend">Spend</option><option value="views">Views</option><option value="cpv">Cost per view</option>
-        <option value="cpe">Cost per engagement</option><option value="engRate">Engagement rate</option>
-        <option value="saveRate">Save rate</option>
-      </select>
-    </div>
+
   </div>
   <div class="tablecard"><div class="tablescroll"><table>
     <thead>
       <tr>
-        <th class="h-content" rowspan="2">Content</th>
-        <th rowspan="2" title="Money spent boosting this post">Spend</th>
-        <th rowspan="2" title="People who saw it">Reach</th>
-        <th rowspan="2" title="Number of plays / views">Views</th>
-        <th rowspan="2" title="New profile follows from this post">Follows</th>
+        <th class="h-content" rowspan="2" data-sort="title">Content</th>
+        <th rowspan="2" title="Money spent boosting this post" data-sort="spend">Spend</th>
+        <th rowspan="2" title="People who saw it" data-sort="reach">Reach</th>
+        <th rowspan="2" title="Number of plays / views" data-sort="views">Views</th>
+        <th rowspan="2" title="New profile follows from this post" data-sort="follows">Follows</th>
         <th class="h-group" colspan="5">Engagements</th>
-        <th rowspan="2" title="Cost per view — what you paid for each view. Lower is better">CPV</th>
-        <th rowspan="2" title="Cost per engagement — what you paid per interaction. Lower is better">CPE</th>
+        <th rowspan="2" title="Cost per view — what you paid for each view. Lower is better" data-sort="cpv">CPV</th>
+        <th rowspan="2" title="Cost per engagement — what you paid per interaction. Lower is better" data-sort="cpe">CPE</th>
         <th class="h-verdict" rowspan="2">Verdict</th>
       </tr>
       <tr>
-        <th class="h-sub" title="Total interactions">Total</th>
-        <th class="h-sub" title="Likes / reactions on the post">Likes</th>
-        <th class="h-sub" title="Comments on the post">Comments</th>
-        <th class="h-sub" title="Times the post was shared">Shares</th>
-        <th class="h-sub" title="Times the post was saved">Saves</th>
+        <th class="h-sub" title="Total interactions" data-sort="engagements">Total</th>
+        <th class="h-sub" title="Likes / reactions on the post" data-sort="likes">Likes</th>
+        <th class="h-sub" title="Comments on the post" data-sort="comments">Comments</th>
+        <th class="h-sub" title="Times the post was shared" data-sort="shares">Shares</th>
+        <th class="h-sub" title="Times the post was saved" data-sort="saves">Saves</th>
       </tr>
     </thead><tbody id="tbody"></tbody>
   </table></div></div>
@@ -240,11 +235,11 @@ const pct=v=>v==null?'<span class="muted">—</span>':(v*100).toFixed(1)+"%";
 const cpvF=v=>v==null?"—":"₹"+Number(v).toFixed(4);
 const cpeF=v=>v==null?"—":"₹"+Number(v).toFixed(3);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-let DATA, state={window:"lifetime",fmt:"all",camp:"all",bucket:"all",q:"",sort:"spend"};
+let DATA, state={window:"lifetime",fmt:"all",camp:"all",bucket:"all",q:"",sort:"spend",sortDir:-1};
 const today=new Date();
 function inWindow(p){ if(state.window==="lifetime"||!p.date) return true; const d=new Date(p.date+"T00:00:00"); const days=(today-d)/86400000; if(days<0) return false; return state.window==="d7"?days<=7:days<=30; }
 function windowed(){ return DATA.pieces.filter(inWindow); }
-function filtered(){ return windowed().filter(p=>{ if(state.fmt!=="all"&&p.format!==state.fmt) return false; if(state.camp!=="all"&&p.objective!==state.camp) return false; if(state.bucket!=="all"&&p.bucket!==state.bucket) return false; return true; }).sort((a,b)=>{ const k=state.sort; let av=a[k],bv=b[k]; av=av==null?-Infinity:av; bv=bv==null?-Infinity:bv; return (k==="spend"||k==="views"||k==="engRate"||k==="saveRate")?bv-av:av-bv; }); }
+function filtered(){ return windowed().filter(p=>{ if(state.fmt!=="all"&&p.format!==state.fmt) return false; if(state.camp!=="all"&&p.objective!==state.camp) return false; if(state.bucket!=="all"&&p.bucket!==state.bucket) return false; return true; }).sort((a,b)=>{ const k=state.sort; let av=a[k],bv=b[k]; if(typeof av==="string"||typeof bv==="string"){ av=(av||"").toLowerCase(); bv=(bv||"").toLowerCase(); return av<bv?-state.sortDir:av>bv?state.sortDir:0; } av=av==null?-Infinity:av; bv=bv==null?-Infinity:bv; return (av-bv)*state.sortDir; }); }
 const vClass=v=>v==="Profitable"?"green":v==="Loss-making"?"red":v==="Broke even"?"amber":"grey";
 const vReason=v=>v==="Profitable"?"Low CPV &amp; CPE":v==="Loss-making"?"High CPV &amp; CPE":v==="Broke even"?"Mixed efficiency":"Not boosted";
 function renderTiles(){
@@ -290,6 +285,7 @@ function buildCharts(){
 }
 function bucketsAvailable(){ const base=windowed().filter(p=>{ if(state.fmt!=="all"&&p.format!==state.fmt) return false; if(state.camp!=="all"&&p.objective!==state.camp) return false; return true; }); return [...new Set(base.map(p=>p.bucket).filter(Boolean))].sort(); }
 function renderBucketChips(){ const av=bucketsAvailable(); if(state.bucket!=="all"&&!av.includes(state.bucket)) state.bucket="all"; const cur=state.bucket; document.getElementById("bucketChips").innerHTML='<button class="chip" data-bucket="all" aria-pressed="'+(cur==="all")+'" type="button">All buckets</button>'+av.map(b=>'<button class="chip" data-bucket="'+esc(b)+'" aria-pressed="'+(cur===b)+'" type="button">'+esc(b)+'</button>').join(""); }
+function updateSortUI(){ document.querySelectorAll("thead th[data-sort]").forEach(th=>{ let s=th.querySelector(".sarrow"); if(!s){ s=document.createElement("span"); s.className="sarrow"; th.appendChild(s); } s.textContent = th.dataset.sort===state.sort ? (state.sortDir<0?"\u25bc":"\u25b2") : ""; }); }
 function renderAll(){ renderBucketChips(); renderTiles(); renderTable(); buildCharts(); }
 function bindChips(id,key){ document.getElementById(id).addEventListener("click",e=>{ const b=e.target.closest(".chip"); if(!b) return; const val=b.dataset.fmt||b.dataset.camp||b.dataset.bucket; if(b.getAttribute("aria-pressed")==="true"&&val!=="all"){ state[key]="all"; const al=[...e.currentTarget.children].find(c=>(c.dataset.fmt||c.dataset.camp||c.dataset.bucket)==="all"); [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===al?"true":"false")); } else { state[key]=val; [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false")); } if(key==="fmt"||key==="camp") renderBucketChips(); renderTable(); }); }
 function render(d){
@@ -297,7 +293,8 @@ function render(d){
   document.getElementById("windowNote").textContent=`${d.summary.boosted} boosted pieces · updated ${new Date(d.meta.generatedAt).toLocaleDateString("en-IN")}`;
   document.getElementById("metaLine").innerHTML=`<span class="dot"></span> Source: ${esc(d.meta.source)} — ${esc(d.meta.note||"")}`;
   bindChips("fmtChips","fmt"); bindChips("campChips","camp"); bindChips("bucketChips","bucket");
-  document.getElementById("sortSel").onchange=e=>{state.sort=e.target.value;renderTable();};
+  document.querySelector("table thead").addEventListener("click",e=>{ const th=e.target.closest("th[data-sort]"); if(!th) return; if(state.sort===th.dataset.sort) state.sortDir=-state.sortDir; else { state.sort=th.dataset.sort; state.sortDir=-1; } updateSortUI(); renderTable(); }); updateSortUI();
+  
   document.getElementById("windowToggle").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; state.window=b.dataset.window; [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false")); renderAll(); });
   renderAll();
 }
