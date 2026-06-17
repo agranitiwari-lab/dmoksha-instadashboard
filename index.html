@@ -166,7 +166,6 @@
   <div class="controls">
     <div class="filtersets">
       <div class="chips" id="fmtChips" role="group">
-        <button class="chip" data-fmt="all" aria-pressed="true" type="button">All</button>
         <button class="chip" data-fmt="Reel" aria-pressed="false" type="button">Reels</button>
         <button class="chip" data-fmt="Carousel" aria-pressed="false" type="button">Carousels</button>
         <button class="chip" data-fmt="Static" aria-pressed="false" type="button">Static</button>
@@ -273,7 +272,7 @@ function buildCharts(){
   mk("chTop",{type:"bar",data:{labels:top.map(p=>cut(p.title)),datasets:[{data:top.map(p=>p.views),backgroundColor:"#5aa9e6",borderRadius:5}]},options:{...base,indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString("en-IN")+" views"}}},scales:{x:{ticks:{callback:v=>(v/1000)+"k"}}}}});
 }
 function renderAll(){ renderTiles(); renderTable(); buildCharts(); }
-function bindChips(id,key){ document.getElementById(id).addEventListener("click",e=>{ const b=e.target.closest(".chip"); if(!b) return; state[key]=b.dataset.fmt||b.dataset.camp||b.dataset.bucket; [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false")); renderTable(); }); }
+function bindChips(id,key){ document.getElementById(id).addEventListener("click",e=>{ const b=e.target.closest(".chip"); if(!b) return; const val=b.dataset.fmt||b.dataset.camp||b.dataset.bucket; if(b.getAttribute("aria-pressed")==="true"&&val!=="all"){ state[key]="all"; const al=[...e.currentTarget.children].find(c=>(c.dataset.fmt||c.dataset.camp||c.dataset.bucket)==="all"); [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===al?"true":"false")); } else { state[key]=val; [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false")); } renderTable(); }); }
 function render(d){
   DATA=d;
   document.getElementById("windowNote").textContent=`${d.summary.boosted} boosted pieces · updated ${new Date(d.meta.generatedAt).toLocaleDateString("en-IN")}`;
